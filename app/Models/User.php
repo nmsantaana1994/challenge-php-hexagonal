@@ -2,8 +2,11 @@
 
 namespace App\Models;
 
+use App\Infrastructure\Persistence\Eloquent\Models\ApiLog;
+use App\Infrastructure\Persistence\Eloquent\Models\FavoriteGif;
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 
@@ -44,5 +47,15 @@ class User extends Authenticatable
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
         ];
+    }
+
+    public function favoriteGifs(): HasMany
+    {
+        return $this->hasMany(FavoriteGif::class);
+    }
+
+    public function apiLogs(): HasMany
+    {
+        return $this->hasMany(ApiLog::class);
     }
 }
