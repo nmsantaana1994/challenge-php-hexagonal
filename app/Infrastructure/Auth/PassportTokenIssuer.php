@@ -21,10 +21,10 @@ class PassportTokenIssuer implements TokenIssuerInterface
             throw new RuntimeException('Unable to issue token for a non-existent user.');
         }
 
+        $issuedAt = CarbonImmutable::now();
+        $expiresAt = $issuedAt->add(Passport::personalAccessTokensExpireIn());
         $tokenResult = $eloquentUser->createToken('challenge-api-token');
-        $expiresIn = CarbonImmutable::now()
-            ->add(Passport::personalAccessTokensExpireIn())
-            ->diffInSeconds(CarbonImmutable::now());
+        $expiresIn = $issuedAt->diffInSeconds($expiresAt);
 
         return new IssuedTokenDto(
             accessToken: (string) $tokenResult->accessToken,
