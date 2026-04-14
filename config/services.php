@@ -35,4 +35,10 @@ return [
         ],
     ],
 
+    'giphy' => [
+        'base_url' => env('GIPHY_BASE_URL', 'https://api.giphy.com/'),
+        'api_key' => env('GIPHY_API_KEY'),
+        'timeout' => (int) env('GIPHY_TIMEOUT', 10),
+    ],
+
 ];
