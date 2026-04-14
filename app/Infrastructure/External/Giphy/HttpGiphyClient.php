@@ -45,15 +45,21 @@ class HttpGiphyClient implements GiphyClientInterface
             return null;
         }
 
+        $payload = $response->json();
+
+        if ($this->isMissingGifPayload($response->status(), $payload)) {
+            return null;
+        }
+
         if ($response->failed()) {
             throw new GiphyIntegrationException(
                 sprintf('Giphy request failed with status %d.', $response->status())
             );
         }
 
-        $data = $response->json('data');
+        $data = $payload['data'] ?? null;
 
-        if (! is_array($data) || $data === []) {
+        if (! is_array($data) || $data === [] || ! isset($data['id']) || $data['id'] === '') {
             return null;
         }
 
@@ -96,6 +102,41 @@ class HttpGiphyClient implements GiphyClientInterface
             ->withQueryParameters([
                 'api_key' => $apiKey,
             ]);
+    }
+
+    /**
+     * @param mixed $payload
+     */
+    private function isMissingGifPayload(int $statusCode, mixed $payload): bool
+    {
+        if (! is_array($payload)) {
+            return false;
+        }
+
+        $meta = $payload['meta'] ?? null;
+        $data = $payload['data'] ?? null;
+
+        if (! is_array($meta)) {
+            return is_array($data) && $data === [];
+        }
+
+        $metaStatus = isset($meta['status']) ? (int) $meta['status'] : null;
+        $metaMessage = strtolower((string) ($meta['msg'] ?? ''));
+        $metaErrorCode = strtolower((string) ($meta['error_code'] ?? ''));
+        $hasEmptyData = is_array($data) && $data === [];
+
+        if ($metaStatus === 404) {
+            return true;
+        }
+
+        if ($statusCode !== 400 || ! $hasEmptyData) {
+            return false;
+        }
+
+        $mentionsInvalidGifId = str_contains($metaMessage, 'validation error')
+            && (str_contains($metaErrorCode, 'invalid gif id') || str_contains($metaErrorCode, 'gifid'));
+
+        return $mentionsInvalidGifId;
     }
 
     /**
