@@ -1,27 +1,23 @@
 # Challenge PHP Hexagonal
 
-API REST construida con Laravel 12, arquitectura Hexagonal + DDD, autenticación OAuth 2.0 mediante Laravel Passport, integración con Giphy, persistencia de favoritos y auditoría automática de interacciones HTTP.
+API REST desarrollada con Laravel 12, arquitectura Hexagonal + DDD, autenticación OAuth 2.0 con Laravel Passport, integración con Giphy, persistencia de favoritos y auditoría automática de interacciones HTTP.
 
 ## Resumen
 
-Este proyecto resuelve un challenge técnico orientado a diseño de arquitectura, integración externa, autenticación y trazabilidad.
+Este proyecto resuelve un challenge técnico cuyo objetivo es construir una API mantenible, desacoplada y defendible en una revisión técnica.
 
-El foco principal fue:
-
-- separar lógica de negocio de detalles de infraestructura
-- evitar acoplamiento directo entre casos de uso, Eloquent y HTTP
-- implementar una API defendible técnicamente para revisión
-
-Estado actual implementado:
+El alcance implementado hoy incluye:
 
 - login con emisión de token
 - búsqueda de GIFs por texto
 - consulta de GIF por ID
 - guardado de GIF favorito
 - auditoría automática de requests y responses API
-- sanitización de datos sensibles en auditoría
-- tests feature y unit tests mínimos
-- colección Postman lista para entrega
+- redacción de datos sensibles en auditoría
+- tests feature y unit
+- colección Postman lista para importar
+- Docker para app + MySQL
+- diagramas técnicos mínimos del proyecto
 
 ## Stack
 
@@ -31,10 +27,11 @@ Estado actual implementado:
 - MySQL o MariaDB
 - SQLite en memoria para tests
 - PHPUnit 11
+- Docker / Docker Compose
 
-## Arquitectura
+## Arquitectura implementada
 
-El proyecto sigue una estructura Hexagonal + DDD adaptada a Laravel:
+El proyecto está organizado con una separación hexagonal pragmática:
 
 ```text
 app/
@@ -44,58 +41,69 @@ app/
     DTOs/
     UseCases/
   Infrastructure/
+    Auth/
+    External/
+      Giphy/
     Http/
       Controllers/
-      Requests/
       Middleware/
+      Requests/
     Persistence/
       Eloquent/
         Models/
         Repositories/
-    External/
-      Giphy/
     Providers/
 routes/
 tests/
 ```
 
-### Responsabilidades por capa
+### Rol de cada capa
 
-- `Domain`: reservado para reglas puras de dominio y conceptos del negocio.
-- `Application`: contiene puertos, DTOs y casos de uso.
-- `Infrastructure`: implementa adaptadores concretos como HTTP, Eloquent, Passport, Giphy y auditoría.
+- `Domain`: reservado para conceptos y reglas de negocio puras.
+- `Application`: contiene contratos, DTOs y casos de uso.
+- `Infrastructure`: implementa adaptadores concretos para HTTP, Eloquent, Passport, Giphy y auditoría.
 
-## Alcance implementado
+### Idea central del diseño
 
-### Endpoints funcionales
+Los casos de uso no dependen directamente de Eloquent, Giphy ni Passport. En su lugar, dependen de puertos definidos en `Application/Contracts`, que luego se resuelven con adaptadores concretos desde `Infrastructure`.
+
+## Funcionalidades implementadas
+
+### Endpoints reales
 
 - `POST /api/auth/login`
 - `GET /api/gifs/search`
 - `GET /api/gifs/{id}`
 - `POST /api/favorites`
 
-### Persistencia
+### Persistencia implementada
 
-- tabla `favorite_gifs`
-- tabla `api_logs`
+- `favorite_gifs`
+- `api_logs`
+- tablas OAuth de Passport
 
 ### Seguridad y trazabilidad
 
 - autenticación con Passport
-- protección de endpoints privados mediante `auth:api`
-- auditoría automática vía middleware en todas las rutas `/api/*`
-- redacción de datos sensibles antes de persistir auditoría
+- protección de endpoints privados con `auth:api`
+- auditoría automática en todas las rutas `/api/*`
+- sanitización de claves sensibles antes de persistir auditoría
 
 ## Requisitos
 
-Para levantar el proyecto localmente se necesita:
+Para correr el proyecto fuera de Docker:
 
 - PHP 8.4 o superior
 - Composer
 - MySQL o MariaDB
-- extensiones PHP compatibles con Laravel 12
+- extensiones PHP necesarias para Laravel 12
 - claves de Passport
 - API key de Giphy
+
+Para correrlo con Docker:
+
+- Docker
+- Docker Compose
 
 ## Instalación local
 
@@ -119,7 +127,7 @@ En Linux/macOS:
 cp .env.example .env
 ```
 
-### 3. Generar la clave de la aplicación
+### 3. Generar la clave de aplicación
 
 ```bash
 php artisan key:generate
@@ -127,7 +135,7 @@ php artisan key:generate
 
 ### 4. Configurar `.env`
 
-Ejemplo mínimo:
+Ejemplo mínimo para entorno local:
 
 ```env
 APP_NAME="Challenge PHP Hexagonal"
@@ -164,7 +172,7 @@ GIPHY_TIMEOUT=10
 - `PASSPORT_PRIVATE_KEY`
 - `PASSPORT_PUBLIC_KEY`
 
-## Migraciones y base de datos
+## Base de datos y migraciones
 
 Ejecutar migraciones:
 
@@ -183,17 +191,31 @@ Esto crea, entre otras, las tablas:
 
 El proyecto utiliza Laravel Passport como implementación de OAuth 2.0.
 
-### Generar claves
+### Qué está resuelto
 
-Si el entorno aún no tiene claves:
+- emisión de token desde `PassportTokenIssuer`
+- guard `api` configurado con driver `passport`
+- endpoints privados protegidos con `auth:api`
+
+### Pasos manuales reales en un entorno nuevo
+
+#### 1. Generar claves
 
 ```bash
 php artisan passport:keys
 ```
 
+#### 2. Crear personal access client si el entorno lo necesita
+
+En un entorno nuevo puede ser necesario crear explícitamente el personal access client de Passport. Ese paso no se automatiza en cada arranque para mantener la solución simple y controlada.
+
+#### 3. Crear usuario de prueba si querés probar login rápidamente
+
+Tampoco se automatiza por defecto, para evitar decisiones de negocio o datos hardcodeados en cada arranque.
+
 ### Nota técnica
 
-La capa de aplicación no depende de Passport directamente. La emisión de tokens se resuelve desde infraestructura a través del adaptador `PassportTokenIssuer`, respetando la separación hexagonal.
+La capa de aplicación no depende directamente de Passport. La emisión de token está encapsulada en infraestructura, respetando la separación hexagonal.
 
 ## Giphy API Key
 
@@ -208,9 +230,7 @@ Sin esa clave:
 - `GET /api/gifs/search` responderá error de integración
 - `GET /api/gifs/{id}` responderá error de integración
 
-## Cómo correr la aplicación
-
-Levantar servidor local:
+## Cómo correr la aplicación en local
 
 ```bash
 php artisan serve
@@ -222,9 +242,59 @@ La API quedará disponible en:
 http://127.0.0.1:8000/api
 ```
 
+## Cómo correr con Docker
+
+### Levantar entorno
+
+```bash
+docker compose up -d --build
+```
+
+Servicios expuestos:
+
+- App: `http://localhost:8000`
+- MySQL: `localhost:3307`
+
+### Comandos útiles iniciales
+
+Generar clave de aplicación:
+
+```bash
+docker compose exec app php artisan key:generate
+```
+
+Ejecutar migraciones:
+
+```bash
+docker compose exec app php artisan migrate
+```
+
+Generar claves de Passport:
+
+```bash
+docker compose exec app php artisan passport:keys
+```
+
+### Qué queda resuelto automáticamente en Docker
+
+El entrypoint del contenedor `app`:
+
+- crea directorios de `storage/framework`
+- asegura permisos de escritura sobre `storage` y `bootstrap/cache`
+- corrige permisos de `storage/oauth-private.key` y `storage/oauth-public.key` si existen
+
+### Qué sigue siendo manual y por qué
+
+Para mantener una solución simple y defendible, no se automatiza en cada arranque:
+
+- creación de usuario de prueba
+- creación de personal access client
+
+Esto evita meter datos o decisiones de negocio en el bootstrap del contenedor.
+
 ## Cómo correr los tests
 
-Los tests están configurados para correr de forma reproducible usando SQLite en memoria.
+La suite está preparada para correr de forma reproducible usando SQLite en memoria.
 
 ### Ejecutar toda la suite
 
@@ -260,11 +330,11 @@ Actualmente cubren:
 - guardar favorito sin token -> `401`
 - guardar favorito válido -> `201`
 
-Además validan que la auditoría:
+Además verifican que la auditoría:
 
 - no rompa el flujo
 - inserte registros
-- redacte datos sensibles en casos críticos
+- redacte datos sensibles en casos relevantes
 
 ### Unit tests
 
@@ -351,7 +421,7 @@ Cada interacción relevante de `/api/*` se registra en `api_logs` con:
 - `response_body`
 - `ip_address`
 
-La auditoría se implementa con middleware reutilizable en infraestructura y no altera la respuesta de la API si el guardado falla.
+La auditoría se implementa con middleware reutilizable en infraestructura y no altera la respuesta al cliente si el guardado falla.
 
 ### Redacción de datos sensibles
 
@@ -372,9 +442,9 @@ Claves sanitizadas actualmente:
 
 ## Colección Postman
 
-El repositorio incluye una colección lista para importar:
+El repositorio incluye la colección:
 
-- [postman/Challenge_PHP_Hexagonal.postman_collection.json](/C:/laragon/www/challenge-php-hexagonal/postman/Challenge_PHP_Hexagonal.postman_collection.json:1)
+- [postman/Challenge_PHP_Hexagonal.postman_collection.json](postman/Challenge_PHP_Hexagonal.postman_collection.json)
 
 Incluye requests para:
 
@@ -398,7 +468,22 @@ Variables contempladas:
 - `user_id`
 - `favorite_alias`
 
-## Decisiones técnicas
+## Diagramas incluidos
+
+Los diagramas versionables del proyecto están en:
+
+- [docs/diagrams/README.md](docs/diagrams/README.md)
+- [docs/diagrams/architecture.mmd](docs/diagrams/architecture.mmd)
+- [docs/diagrams/sequence-login.mmd](docs/diagrams/sequence-login.mmd)
+- [docs/diagrams/der.mmd](docs/diagrams/der.mmd)
+
+Incluyen:
+
+- diagrama de arquitectura/componentes
+- diagrama de secuencia del login
+- DER básico del modelo de datos actual
+
+## Decisiones técnicas importantes
 
 ### Laravel 12 + PHP 8.4
 
@@ -411,14 +496,14 @@ Se eligió Passport porque:
 - la consigna pide explícitamente OAuth 2.0
 - es la implementación oficial del ecosistema Laravel
 - evita reimplementar una capa sensible de seguridad
-- permite concentrar el challenge en diseño, integración y trazabilidad
+- permite concentrar el challenge en arquitectura, integración y trazabilidad
 
-### Arquitectura hexagonal
+### Arquitectura hexagonal pragmática
 
 Se aplicó para que:
 
 - los casos de uso dependan de contratos y DTOs
-- la infraestructura implemente adaptadores concretos
+- infraestructura implemente adaptadores concretos
 - Eloquent y HTTP no contaminen la capa de aplicación
 
 ### Auditoría en middleware
@@ -433,18 +518,28 @@ Se resolvió como middleware para:
 
 Estado real del proyecto al momento de esta entrega:
 
-- no incluye todavía Docker o Docker Compose
-- no incluye diagramas ni DER dentro del repo
-- no incluye colección Postman environment exportada, solo la colección
+- el dominio está modelado de forma liviana, priorizando separación de capas sobre complejidad de DDD
 - la integración real con Giphy depende de una API key válida
+- el setup inicial de Passport puede requerir pasos manuales en entornos nuevos
+- la colección Postman no incluye un environment exportado, solo la colección
 - la suite actual prioriza cobertura útil mínima antes que cobertura exhaustiva
+
+## Revisión rápida del entregable
+
+Actualmente el proyecto incluye:
+
+- código funcional de la API
+- tests feature y unit
+- colección Postman
+- Dockerfile y `docker-compose.yml`
+- diagramas Mermaid
+- documentación principal en este README
 
 ## Próximos pasos posibles
 
 Si el challenge continuara, los siguientes pasos razonables serían:
 
-- agregar Dockerfile y `docker-compose`
-- incorporar diagramas de arquitectura y secuencia
-- sumar más unit tests sobre adaptadores concretos
 - agregar environment de Postman exportable
-- reforzar documentación operativa de despliegue
+- sumar más unit tests sobre adaptadores concretos
+- enriquecer el modelado de dominio si el negocio creciera
+- reforzar documentación de despliegue productivo
