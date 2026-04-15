@@ -1,0 +1,10 @@
+.git
+.gitignore
+.phpunit.result.cache
+node_modules
+vendor
+storage/logs
+bootstrap/cache/*.php
+tests
+docs
+postman

@@ -1,0 +1,45 @@
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: challenge_php_hexagonal_app
+    depends_on:
+      db:
+        condition: service_healthy
+    ports:
+      - "8000:80"
+    environment:
+      APP_ENV: local
+      APP_DEBUG: "true"
+      APP_URL: http://localhost:8000
+      DB_CONNECTION: mysql
+      DB_HOST: db
+      DB_PORT: 3306
+      DB_DATABASE: challenge_php_hexagonal
+      DB_USERNAME: challenge_user
+      DB_PASSWORD: challenge_password
+    volumes:
+      - ./.env:/var/www/html/.env
+
+  db:
+    image: mysql:8.4
+    container_name: challenge_php_hexagonal_db
+    restart: unless-stopped
+    environment:
+      MYSQL_DATABASE: challenge_php_hexagonal
+      MYSQL_USER: challenge_user
+      MYSQL_PASSWORD: challenge_password
+      MYSQL_ROOT_PASSWORD: root
+    ports:
+      - "3307:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1", "-proot"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  mysql_data:
