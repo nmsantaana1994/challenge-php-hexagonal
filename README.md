@@ -4,7 +4,7 @@ API REST desarrollada con Laravel 12, arquitectura Hexagonal + DDD, autenticaci�
 
 ## Resumen
 
-Este proyecto resuelve un challenge técnico cuyo objetivo es construir una API mantenible, desacoplada y defendible en una revisión técnica.
+Este proyecto resuelve un challenge técnico cuyo objetivo es construir una API mantenible y desacoplada.
 
 El alcance implementado hoy incluye:
 
@@ -522,7 +522,6 @@ Estado real del proyecto al momento de esta entrega:
 - la integración real con Giphy depende de una API key válida
 - el setup inicial de Passport puede requerir pasos manuales en entornos nuevos
 - la colección Postman no incluye un environment exportado, solo la colección
-- la suite actual prioriza cobertura útil mínima antes que cobertura exhaustiva
 
 ## Revisión rápida del entregable
 
@@ -534,12 +533,3 @@ Actualmente el proyecto incluye:
 - Dockerfile y `docker-compose.yml`
 - diagramas Mermaid
 - documentación principal en este README
-
-## Próximos pasos posibles
-
-Si el challenge continuara, los siguientes pasos razonables serían:
-
-- agregar environment de Postman exportable
-- sumar más unit tests sobre adaptadores concretos
-- enriquecer el modelado de dominio si el negocio creciera
-- reforzar documentación de despliegue productivo
