@@ -1,0 +1,87 @@
+flowchart LR
+    Client[Cliente API\nPostman / consumidor HTTP]
+
+    subgraph HTTP["Infrastructure - HTTP"]
+        Routes[routes/api.php]
+        AuditMw[ApiInteractionAuditMiddleware]
+        AuthController[AuthController]
+        GifController[GifController]
+        FavoriteController[FavoriteGifController]
+        LoginRequest[LoginRequest]
+        SearchRequest[SearchGifsRequest]
+        GetByIdRequest[GetGifByIdRequest]
+        SaveFavoriteRequest[SaveFavoriteGifRequest]
+    end
+
+    subgraph Application["Application"]
+        LoginUC[LoginUserUseCase]
+        SearchUC[SearchGifsUseCase]
+        GetGifUC[GetGifByIdUseCase]
+        SaveFavoriteUC[SaveFavoriteGifUseCase]
+        AuditUC[LogApiInteractionUseCase]
+
+        UserPort[UserRepositoryInterface]
+        FavoritePort[FavoriteGifRepositoryInterface]
+        AuditPort[AuditLogRepositoryInterface]
+        GiphyPort[GiphyClientInterface]
+        TokenPort[TokenIssuerInterface]
+    end
+
+    subgraph InfraAdapters["Infrastructure - Adaptadores"]
+        UserRepo[EloquentUserRepository]
+        FavoriteRepo[EloquentFavoriteGifRepository]
+        AuditRepo[EloquentAuditLogRepository]
+        GiphyClient[HttpGiphyClient]
+        TokenIssuer[PassportTokenIssuer]
+    end
+
+    subgraph Persistence["Persistencia / externos"]
+        UserModel[App\Models\User]
+        FavoriteModel[FavoriteGif Model]
+        ApiLogModel[ApiLog Model]
+        MySQL[(MySQL)]
+        GiphyAPI[Giphy API]
+        Passport[Laravel Passport]
+    end
+
+    Client --> Routes
+    Routes --> AuditMw
+    Routes --> AuthController
+    Routes --> GifController
+    Routes --> FavoriteController
+
+    AuthController --> LoginRequest
+    GifController --> SearchRequest
+    GifController --> GetByIdRequest
+    FavoriteController --> SaveFavoriteRequest
+
+    AuthController --> LoginUC
+    GifController --> SearchUC
+    GifController --> GetGifUC
+    FavoriteController --> SaveFavoriteUC
+    AuditMw --> AuditUC
+
+    LoginUC --> UserPort
+    LoginUC --> TokenPort
+    SearchUC --> GiphyPort
+    GetGifUC --> GiphyPort
+    SaveFavoriteUC --> UserPort
+    SaveFavoriteUC --> FavoritePort
+    AuditUC --> AuditPort
+
+    UserPort --> UserRepo
+    FavoritePort --> FavoriteRepo
+    AuditPort --> AuditRepo
+    GiphyPort --> GiphyClient
+    TokenPort --> TokenIssuer
+
+    UserRepo --> UserModel
+    FavoriteRepo --> FavoriteModel
+    AuditRepo --> ApiLogModel
+
+    UserModel --> MySQL
+    FavoriteModel --> MySQL
+    ApiLogModel --> MySQL
+    GiphyClient --> GiphyAPI
+    TokenIssuer --> Passport
+    TokenIssuer --> UserModel

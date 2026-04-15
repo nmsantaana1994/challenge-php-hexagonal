@@ -1,0 +1,44 @@
+sequenceDiagram
+    autonumber
+    participant C as Cliente
+    participant R as routes/api.php
+    participant MW as ApiInteractionAuditMiddleware
+    participant FR as LoginRequest
+    participant CT as AuthController
+    participant UC as LoginUserUseCase
+    participant UR as EloquentUserRepository
+    participant U as User
+    participant TI as PassportTokenIssuer
+    participant P as Laravel Passport
+    participant AU as LogApiInteractionUseCase
+    participant AR as EloquentAuditLogRepository
+    participant DB as MySQL
+
+    C->>R: POST /api/auth/login
+    R->>MW: entra al grupo api
+    MW->>FR: validar email/password
+    FR-->>CT: LoginUserInputDto
+    CT->>UC: execute(dto)
+    UC->>UR: findByEmail(email)
+    UR->>U: query user
+    U-->>UR: user encontrado / null
+    UR-->>UC: AuthenticatedUserDto / null
+
+    alt credenciales inválidas
+        UC-->>CT: null
+        CT-->>C: 401 JSON
+    else credenciales válidas
+        UC->>TI: issueForUser(user)
+        TI->>U: find(user->id)
+        TI->>P: createToken(...)
+        P-->>TI: token emitido
+        TI-->>UC: IssuedTokenDto
+        UC-->>CT: IssuedTokenDto
+        CT-->>C: 200 JSON con access_token
+    end
+
+    MW->>AU: execute(LogApiInteractionInputDto)
+    AU->>AR: save(ApiLogDto)
+    AR->>DB: insert into api_logs
+    DB-->>AR: ok
+    AR-->>AU: ApiLogDto persistido

@@ -1,0 +1,38 @@
+erDiagram
+    users ||--o{ favorite_gifs : "has many"
+    users ||--o{ api_logs : "has many"
+
+    users {
+        BIGINT id PK
+        VARCHAR name
+        VARCHAR email UK
+        TIMESTAMP email_verified_at
+        VARCHAR password
+        VARCHAR remember_token
+        TIMESTAMP created_at
+        TIMESTAMP updated_at
+    }
+
+    favorite_gifs {
+        BIGINT id PK
+        BIGINT user_id FK
+        VARCHAR gif_id
+        VARCHAR alias
+        VARCHAR gif_title
+        VARCHAR gif_url
+        JSON raw_payload
+        TIMESTAMP created_at
+        TIMESTAMP updated_at
+    }
+
+    api_logs {
+        BIGINT id PK
+        BIGINT user_id FK
+        VARCHAR service_name
+        JSON request_body
+        SMALLINT response_code
+        LONGTEXT response_body
+        VARCHAR ip_address
+        TIMESTAMP created_at
+        TIMESTAMP updated_at
+    }
